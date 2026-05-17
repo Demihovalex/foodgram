@@ -89,7 +89,6 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             else:
                 ingredient_id = ingredient_data
                 amount = ingredient_data.get('amount', 1)
-            
             ingredient = Ingredient.objects.get(id=ingredient_id)
             RecipeIngredient.objects.create(
                 recipe=recipe,
