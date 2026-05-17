@@ -1,3 +1,13 @@
+[flake8]
+ignore = D100, D101, D102, D103, D104, D105, D106, F401, I001, I005, E501, W293, E999
+max-line-length = 120
+exclude = 
+    venv,
+    __pycache__,
+    migrations,
+    .git,
+    .github
+
 name: Foodgram Workflow
 
 on:
