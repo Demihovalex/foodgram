@@ -7,8 +7,6 @@ from recipes.models import (
     Tag,
 )
 from rest_framework import serializers
-from rest_framework.fields import SerializerMethodField
-from users.models import CustomUser
 
 
 class TagSerializer(serializers.ModelSerializer):

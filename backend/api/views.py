@@ -5,6 +5,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.serializers import CustomUserSerializer
 
 from .serializers import (
     IngredientSerializer,
@@ -114,7 +116,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_list = []
         for (name, unit), amount in ingredients.items():
             shopping_list.append(f"{name} ({unit}) — {amount}\n")
-
         response = HttpResponse(shopping_list, content_type="text/plain")
-        response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
+        response["Content-Disposition"] = (
+            'attachment; filename="shopping_list.txt"'
+        )
         return response
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)

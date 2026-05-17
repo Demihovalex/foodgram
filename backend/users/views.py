@@ -21,7 +21,9 @@ class SubscriptionView(generics.GenericAPIView):
         if not created:
             return Response({'error': 'Вы уже подписаны'},
                             status=status.HTTP_400_BAD_REQUEST)
-        return Response(CustomUserSerializer(author, context={'request': request}).data)
+        return Response(
+            CustomUserSerializer(author, context={'request': request}).data
+        )
 
     def delete(self, request, user_id):
         author = get_object_or_404(CustomUser, id=user_id)
