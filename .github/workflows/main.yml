@@ -104,26 +104,6 @@ jobs:
       - build_and_push_frontend
       - build_and_push_gateway
     steps:
-    - uses: actions/checkout@v4
-    - name: Test SSH connection
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          echo "SSH connection successful"
-
-    - name: Copy docker-compose.production.yml
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        source: "./docker-compose.production.yml"
-        target: "/home/ubuntu/foodgram/"
-        overwrite: true
-
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v0.1.7
       with:
