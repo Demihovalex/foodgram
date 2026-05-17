@@ -104,8 +104,9 @@ jobs:
       - build_and_push_frontend
       - build_and_push_gateway
     steps:
+    - uses: actions/checkout@v4
     - name: Test SSH connection
-      uses: appleboy/ssh-action@v1.2.2
+      uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
@@ -114,7 +115,7 @@ jobs:
           echo "SSH connection successful"
 
     - name: Copy docker-compose.production.yml
-      uses: appleboy/scp-action@v1.2.2
+      uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
@@ -124,7 +125,7 @@ jobs:
         overwrite: true
 
     - name: Deploy via SSH
-      uses: appleboy/ssh-action@v1.2.2
+      uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
