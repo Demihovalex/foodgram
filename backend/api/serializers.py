@@ -81,6 +81,12 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 'Время приготовления не может быть меньше 1 минуты')
         return value
 
+    def validate_ingredients(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Добавьте хотя бы один ингредиент')
+        return value
+
     def create_ingredients(self, ingredients_data, recipe):
         for ingredient_data in ingredients_data:
             if isinstance(ingredient_data, dict):
