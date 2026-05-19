@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import Ingredient, Recipe, RecipeIngredient, Tag
+from .models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Subscription,
+    Tag,
+)
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -9,31 +17,46 @@ class RecipeIngredientInline(admin.TabularInline):
     extra = 1
 
 
-@admin.register(Recipe)
-class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author', 'cooking_time')
-    search_fields = ('name', 'author__email')
-    list_filter = ('tags',)
-    inlines = [RecipeIngredientInline]
-    filter_horizontal = ('tags',)
-
-    def save_model(self, request, obj, form, change):
-        if not obj.recipe_ingredients.exists():
-            self.message_user(
-                request, 'Нельзя сохранить рецепт без ингредиентов',
-                level='ERROR'
-            )
-            return
-        super().save_model(request, obj, form, change)
-
-
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug')
+    list_display = ('id', 'name', 'slug')
+    search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit')
+    list_display = ('id', 'name', 'measurement_unit')
     search_fields = ('name',)
+    list_filter = ('measurement_unit',)
+
+
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'author', 'cooking_time', 'pub_date')
+    search_fields = ('name', 'author__email', 'author__username')
+    list_filter = ('tags',)
+    inlines = (RecipeIngredientInline,)
+    readonly_fields = ('favorite_count',)
+
+    def favorite_count(self, obj):
+        return obj.favorites.count()
+    favorite_count.short_description = 'Добавлений в избранное'
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'author')
+    search_fields = ('user__email', 'author__email')
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'recipe')
+    search_fields = ('user__email',)
+
+
+@admin.register(ShoppingCart)
+class ShoppingCartAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'recipe')
+    search_fields = ('user__email',)
