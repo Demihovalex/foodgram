@@ -9,7 +9,8 @@ class Command(BaseCommand):
     help = 'Load ingredients from ingredients.json'
 
     def handle(self, *args, **options):
-        file_path = os.path.join(os.path.dirname(__file__), '../../../data/ingredients.json')
+        file_path = os.path.join(os.path.dirname(
+            __file__), '../../../data/ingredients.json')
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         count = 0
