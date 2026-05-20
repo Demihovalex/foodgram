@@ -37,7 +37,8 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit')
 
     class Meta:
         model = RecipeIngredient
@@ -46,7 +47,8 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    ingredients = RecipeIngredientSerializer(source='recipe_ingredients', many=True)
+    ingredients = RecipeIngredientSerializer(
+        source='recipe_ingredients', many=True)
     tags = TagSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -76,17 +78,21 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    ingredients = serializers.ListField(child=serializers.DictField(), write_only=True)
-    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
+    ingredients = serializers.ListField(
+        child=serializers.DictField(), write_only=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(required=True)
 
     class Meta:
         model = Recipe
-        fields = ('ingredients', 'tags', 'name', 'image', 'text', 'cooking_time')
+        fields = ('ingredients', 'tags', 'name',
+                  'image', 'text', 'cooking_time')
 
     def validate_cooking_time(self, value):
         if value < 1:
-            raise serializers.ValidationError('Время приготовления не может быть меньше 1 минуты')
+            raise serializers.ValidationError(
+                'Время приготовления не может быть меньше 1 минуты')
         return value
 
     def _process_ingredients(self, ingredients_data):
@@ -102,7 +108,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def create_ingredients(self, ingredient_amounts, recipe):
         for ing_id, total_amount in ingredient_amounts.items():
             ingredient = Ingredient.objects.get(id=ing_id)
-            RecipeIngredient.objects.create(recipe=recipe, ingredient=ingredient, amount=total_amount)
+            RecipeIngredient.objects.create(
+                recipe=recipe, ingredient=ingredient, amount=total_amount)
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')

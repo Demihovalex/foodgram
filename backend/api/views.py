@@ -1,11 +1,20 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    ShoppingCart,
+    Subscription,
+    Tag,
+)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 
 from .serializers import (
@@ -14,6 +23,57 @@ from .serializers import (
     RecipeReadSerializer,
     TagSerializer,
 )
+
+
+class SubscriptionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        author = get_object_or_404(CustomUser, id=user_id)
+        if request.user == author:
+            return Response({'error': 'Нельзя подписаться на себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        subscription, created = Subscription.objects.get_or_create(
+            user=request.user, author=author
+        )
+        if not created:
+            return Response({'error': 'Вы уже подписаны'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(CustomUserSerializer(author, context={'request':
+                                                              request}).data)
+
+    def delete(self, request, user_id):
+        author = get_object_or_404(CustomUser, id=user_id)
+        deleted, _ = Subscription.objects.filter(
+            user=request.user, author=author
+        ).delete()
+        if not deleted:
+            return Response({'error': 'Вы не подписаны'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SubscriptionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Получаем авторов, на которых подписан пользователь
+        subscriptions = Subscription.objects.filter(
+            user=request.user).select_related('author')
+        authors = [sub.author for sub in subscriptions]
+
+        # Получаем рецепты этих авторов, сортируем по дате (новые выше)
+        recipes = Recipe.objects.filter(
+            author__in=authors).order_by('-pub_date')
+
+        # Пагинация
+        paginator = PageNumberPagination()
+        paginator.page_size = request.query_params.get('limit', 6)
+        page = paginator.paginate_queryset(recipes, request)
+
+        serializer = RecipeReadSerializer(
+            page, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -66,10 +126,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    @action(
-        detail=True, methods=["post", "delete"],
-        permission_classes=[IsAuthenticated]
-    )
+    @action(detail=True, methods=["post", "delete"],
+            permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == "POST":
@@ -83,10 +141,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             Favorite.objects.filter(user=request.user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(
-        detail=True, methods=["post", "delete"],
-        permission_classes=[IsAuthenticated]
-    )
+    @action(detail=True, methods=["post", "delete"],
+            permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == "POST":
@@ -121,6 +177,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'attachment; filename="shopping_list.txt"'
         )
         return response
+
+    @action(detail=True, methods=["get"], url_path="get-link")
+    def get_link(self, request, pk=None):
+        """Возвращает короткую ссылку на рецепт."""
+        recipe = self.get_object()
+        base_url = request.build_absolute_uri('/').rstrip('/')
+        short_link = f"{base_url}/recipes/{recipe.id}/"
+        return Response({"short_link": short_link})
 
 
 class CurrentUserView(APIView):
