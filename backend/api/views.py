@@ -1,19 +1,7 @@
 from constants import PAGE_SIZE
-
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from users.models import CustomUser
-from users.serializers import CustomUserSerializer
-
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -22,8 +10,16 @@ from recipes.models import (
     Subscription,
     Tag,
 )
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.models import CustomUser
+from users.serializers import CustomUserSerializer
 
-from .filters import IngredientFilter, RecipeFilter
+from .filters import IngredientFilter
 from .serializers import (
     IngredientSerializer,
     RecipeCreateUpdateSerializer,
@@ -114,13 +110,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AllowAny,)
     http_method_names = ["get", "post", "patch", "delete"]
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.action in ("create", "partial_update"):
             return RecipeCreateUpdateSerializer
         return RecipeReadSerializer
+
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        tags = self.request.query_params.getlist("tags")
+        author = self.request.query_params.get("author")
+        is_favorited = self.request.query_params.get("is_favorited")
+        is_in_shopping_cart = self.request.query_params.get("is_in_shopping_cart")
+
+        if tags:
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
+        if author:
+            queryset = queryset.filter(author_id=author)
+        if is_favorited and self.request.user.is_authenticated:
+            queryset = queryset.filter(favorites__user=self.request.user)
+        if is_in_shopping_cart and self.request.user.is_authenticated:
+            queryset = queryset.filter(shopping_cart__user=self.request.user)
+
+        return queryset
 
     @action(
         detail=True,
