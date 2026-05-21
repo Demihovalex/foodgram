@@ -9,6 +9,7 @@ from recipes.models import (
     Recipe,
     RecipeIngredient,
     ShoppingCart,
+    Subscription,
     Tag,
 )
 from users.serializers import CustomUserSerializer
@@ -87,9 +88,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = (
-            "ingredients", "tags", "name", "image", "text", "cooking_time"
-        )
+        fields = ("ingredients", "tags", "name",
+                  "image", "text", "cooking_time")
 
     def validate_cooking_time(self, value):
         if value < 1:
@@ -133,3 +133,15 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             self.create_ingredients(ingredients_data, instance)
 
         return super().update(instance, validated_data)
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ("user", "author")
+
+    def validate(self, data):
+        request = self.context.get("request")
+        if request.user == data["author"]:
+            raise serializers.ValidationError("Нельзя подписаться на себя")
+        return data
