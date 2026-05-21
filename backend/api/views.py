@@ -76,16 +76,22 @@ class SubscriptionsView(APIView):
         subscriptions = Subscription.objects.filter(
             user=request.user
         ).select_related("author")
-        authors = [sub.author for sub in subscriptions]
-        recipes = Recipe.objects.filter(author__in=authors)
-
+        
+        results = []
+        for sub in subscriptions:
+            author = sub.author
+            recipes = Recipe.objects.filter(author=author).order_by("-pub_date")
+            recipes_serializer = RecipeReadSerializer(
+                recipes, many=True, context={"request": request}
+            )
+            author_data = CustomUserSerializer(author, context={"request": request}).data
+            author_data["recipes"] = recipes_serializer.data
+            results.append(author_data)
+        
         paginator = self.pagination_class()
         paginator.page_size = request.query_params.get("limit", PAGE_SIZE)
-        page = paginator.paginate_queryset(recipes, request)
-        serializer = RecipeReadSerializer(
-            page, many=True, context={"request": request}
-        )
-        return paginator.get_paginated_response(serializer.data)
+        page = paginator.paginate_queryset(results, request)
+        return paginator.get_paginated_response(page)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -118,21 +124,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=["post", "delete"],
+        methods=["post"],
         permission_classes=[IsAuthenticated],
     )
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
-        if request.method == "POST":
-            favorite, created = Favorite.objects.get_or_create(
-                user=request.user, recipe=recipe
-            )
-            if created:
-                return Response(status=status.HTTP_201_CREATED)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        else:
-            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+        favorite = Favorite.objects.filter(user=request.user, recipe=recipe)
+        if favorite.exists():
+            favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            Favorite.objects.create(user=request.user, recipe=recipe)
+            return Response(status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
@@ -191,4 +194,13 @@ class CurrentUserView(APIView):
 
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)
+
+
+class UserDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, user_id):
+        user = get_object_or_404(CustomUser, id=user_id)
+        serializer = CustomUserSerializer(user, context={"request": request})
         return Response(serializer.data)
