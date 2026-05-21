@@ -1,14 +1,22 @@
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 
+from recipes.models import Subscription
 from .models import CustomUser
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
     class Meta(UserCreateSerializer.Meta):
         model = CustomUser
-        fields = ('id', 'email', 'username', 'first_name', 'last_name',
-                  'password', 'avatar')
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+            "avatar",
+        )
 
 
 class CustomUserSerializer(UserSerializer):
@@ -16,13 +24,32 @@ class CustomUserSerializer(UserSerializer):
 
     class Meta(UserSerializer.Meta):
         model = CustomUser
-        fields = ('id', 'email', 'username', 'first_name', 'last_name',
-                  'avatar', 'is_subscribed')
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar",
+            "is_subscribed",
+        )
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request and request.user.is_authenticated:
-            from recipes.models import Subscription
-            return Subscription.objects.filter(user=request.user,
-                                               author=obj).exists()
+            return Subscription.objects.filter(
+                user=request.user, author=obj
+            ).exists()
         return False
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ("user", "author")
+
+    def validate(self, data):
+        request = self.context.get("request")
+        if request.user == data["author"]:
+            raise serializers.ValidationError("Нельзя подписаться на себя")
+        return data

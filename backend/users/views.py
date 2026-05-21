@@ -1,10 +1,10 @@
 from django.shortcuts import get_object_or_404
-from recipes.models import Subscription
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
+from recipes.models import Subscription
 from .models import CustomUser
-from .serializers import CustomUserSerializer
+from .serializers import CustomUserSerializer, SubscriptionSerializer
 
 
 class SubscriptionView(generics.GenericAPIView):
@@ -12,26 +12,34 @@ class SubscriptionView(generics.GenericAPIView):
 
     def post(self, request, user_id):
         author = get_object_or_404(CustomUser, id=user_id)
-        if request.user == author:
-            return Response({'error': 'Нельзя подписаться на себя'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = SubscriptionSerializer(
+            data={"user": request.user.id, "author": author.id},
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+
         subscription, created = Subscription.objects.get_or_create(
             user=request.user, author=author
         )
         if not created:
-            return Response({'error': 'Вы уже подписаны'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Вы уже подписаны"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
-            CustomUserSerializer(author, context={'request': request}).data
+            CustomUserSerializer(author, context={"request": request}).data
         )
 
     def delete(self, request, user_id):
         author = get_object_or_404(CustomUser, id=user_id)
         subscription = Subscription.objects.filter(
-            user=request.user, author=author)
+            user=request.user, author=author
+        )
         if not subscription.exists():
-            return Response({'error': 'Вы не подписаны'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Вы не подписаны"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         subscription.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
