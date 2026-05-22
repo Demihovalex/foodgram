@@ -129,11 +129,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    @action(
-        detail=True,
-        methods=["post"],
-        permission_classes=[IsAuthenticated],
-    )
+    @action(detail=True, methods=["post", "delete"],
+            permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         favorite = Favorite.objects.filter(user=request.user, recipe=recipe)
