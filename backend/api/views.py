@@ -33,35 +33,30 @@ class SubscriptionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, user_id):
-        author = get_object_or_404(CustomUser, id=user_id)
-        serializer = SubscriptionSerializer(
-            data={"user": request.user.id, "author": author.id},
-            context={"request": request},
-        )
-        serializer.is_valid(raise_exception=True)
-        subscription, created = Subscription.objects.get_or_create(
-            user=request.user, author=author
-        )
-        if not created:
-            return Response(
-                {"error": "Вы уже подписаны"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(
-            CustomUserSerializer(author, context={"request": request}).data
-        )
+        return self._toggle_subscription(request, user_id)
 
     def delete(self, request, user_id):
+        return self._toggle_subscription(request, user_id)
+
+    def _toggle_subscription(self, request, user_id):
         author = get_object_or_404(CustomUser, id=user_id)
-        deleted, _ = Subscription.objects.filter(
-            user=request.user, author=author
-        ).delete()
-        if not deleted:
+        if request.user == author:
             return Response(
-                {"error": "Вы не подписаны"},
+                {"error": "Нельзя подписаться на себя"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        subscription = Subscription.objects.filter(
+            user=request.user, author=author
+        )
+        if subscription.exists():
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            Subscription.objects.create(user=request.user, author=author)
+            return Response(
+                CustomUserSerializer(author, context={"request": request}).data,
+                status=status.HTTP_201_CREATED,
+            )
 
 
 class SubscriptionsView(APIView):
