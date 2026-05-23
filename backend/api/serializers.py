@@ -79,15 +79,15 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    ingredients = RecipeIngredientSerializer(many=True)
+    ingredients = serializers.ListField(
+        child=serializers.DictField(), write_only=True)
     tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True
-    )
-    image = Base64ImageField(required=True)
+        queryset=Tag.objects.all(), many=True)
+    image = Base64ImageField(required=False)
 
     class Meta:
         model = Recipe
-        fields = ("ingredients", "tags", "name",
+        fields = ("id", "ingredients", "tags", "name",
                   "image", "text", "cooking_time")
 
     def validate_cooking_time(self, value):
@@ -100,8 +100,10 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def create_ingredients(self, ingredients_data, recipe):
         ingredient_amounts = defaultdict(int)
         for item in ingredients_data:
-            ingredient_id = item.get("ingredient")
-            amount = item.get("amount", 0)
+            ingredient_id = item.get('id') or item.get('ingredient')
+            if not ingredient_id:
+                continue
+            amount = int(item.get('amount', 0))
             ingredient_amounts[ingredient_id] += amount
         for ingredient_id, total_amount in ingredient_amounts.items():
             ingredient = Ingredient.objects.get(id=ingredient_id)
