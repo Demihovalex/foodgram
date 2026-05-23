@@ -1,9 +1,4 @@
-from constants import (
-    EMAIL_MAX_LENGTH,
-    FIRST_NAME_MAX_LENGTH,
-    LAST_NAME_MAX_LENGTH,
-    USERNAME_MAX_LENGTH,
-)
+from constants import EMAIL_MAX_LENGTH
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 

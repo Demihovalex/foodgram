@@ -61,4 +61,4 @@ class AvatarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('avatar',)
+        fields = ("avatar",)

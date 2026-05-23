@@ -13,19 +13,17 @@ from recipes.models import (
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import CustomUser
-from users.serializers import CustomUserSerializer, AvatarSerializer
+from users.serializers import AvatarSerializer, CustomUserSerializer
 
 from .filters import IngredientFilter
 from .serializers import (
     IngredientSerializer,
     RecipeCreateUpdateSerializer,
     RecipeReadSerializer,
-    SubscriptionSerializer,
     TagSerializer,
 )
 
@@ -215,13 +213,12 @@ class UserDetailView(APIView):
         return Response(serializer.data)
 
 
-from users.serializers import AvatarSerializer
-
 class AvatarView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        serializer = AvatarSerializer(request.user, data=request.data, partial=True)
+        serializer = AvatarSerializer(request.user, data=request.data,
+                                      partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
