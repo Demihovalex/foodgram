@@ -29,9 +29,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source="ingredient.id")
     name = serializers.ReadOnlyField(source="ingredient.name")
-    measurement_unit = serializers.ReadOnlyField(
-        source="ingredient.measurement_unit"
-    )
+    measurement_unit = serializers.ReadOnlyField(source="ingredient.measurement_unit")
 
     class Meta:
         model = RecipeIngredient
@@ -40,9 +38,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    ingredients = RecipeIngredientSerializer(
-        source="recipe_ingredients", many=True
-    )
+    ingredients = RecipeIngredientSerializer(source="recipe_ingredients", many=True)
     tags = TagSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -79,16 +75,13 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    ingredients = serializers.ListField(
-        child=serializers.DictField(), write_only=True)
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True)
+    ingredients = serializers.ListField(child=serializers.DictField(), write_only=True)
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(required=False)
 
     class Meta:
         model = Recipe
-        fields = ("id", "ingredients", "tags", "name",
-                  "image", "text", "cooking_time")
+        fields = ("id", "ingredients", "tags", "name", "image", "text", "cooking_time")
 
     def validate_cooking_time(self, value):
         if value < 1:
@@ -100,10 +93,10 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def create_ingredients(self, ingredients_data, recipe):
         ingredient_amounts = defaultdict(int)
         for item in ingredients_data:
-            ingredient_id = item.get('id') or item.get('ingredient')
+            ingredient_id = item.get("id") or item.get("ingredient")
             if not ingredient_id:
                 continue
-            amount = int(item.get('amount', 0))
+            amount = int(item.get("amount", 0))
             ingredient_amounts[ingredient_id] += amount
         for ingredient_id, total_amount in ingredient_amounts.items():
             ingredient = Ingredient.objects.get(id=ingredient_id)
