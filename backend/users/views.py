@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
+from recipes.models import Subscription
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
-from recipes.models import Subscription
 from .models import CustomUser
 from .serializers import CustomUserSerializer, SubscriptionSerializer
 
