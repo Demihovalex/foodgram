@@ -1,4 +1,5 @@
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import Subscription
 from rest_framework import serializers
 
@@ -53,3 +54,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         if request.user == data["author"]:
             raise serializers.ValidationError("Нельзя подписаться на себя")
         return data
+
+
+class AvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=False)
+
+    class Meta:
+        model = CustomUser
+        fields = ('avatar',)

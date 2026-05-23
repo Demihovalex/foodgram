@@ -13,11 +13,12 @@ from recipes.models import (
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import CustomUser
-from users.serializers import CustomUserSerializer
+from users.serializers import CustomUserSerializer, AvatarSerializer
 
 from .filters import IngredientFilter
 from .serializers import (
@@ -54,7 +55,8 @@ class SubscriptionView(APIView):
         else:
             Subscription.objects.create(user=request.user, author=author)
             return Response(
-                CustomUserSerializer(author, context={"request": request}).data,
+                CustomUserSerializer(author,
+                                     context={"request": request}).data,
                 status=status.HTTP_201_CREATED,
             )
 
@@ -67,18 +69,20 @@ class SubscriptionsView(APIView):
         subscriptions = Subscription.objects.filter(
             user=request.user
         ).select_related("author")
-        
+
         results = []
         for sub in subscriptions:
             author = sub.author
-            recipes = Recipe.objects.filter(author=author).order_by("-pub_date")
+            recipes = Recipe.objects.filter(
+                author=author).order_by("-pub_date")
             recipes_serializer = RecipeReadSerializer(
                 recipes, many=True, context={"request": request}
             )
-            author_data = CustomUserSerializer(author, context={"request": request}).data
+            author_data = CustomUserSerializer(
+                author, context={"request": request}).data
             author_data["recipes"] = recipes_serializer.data
             results.append(author_data)
-        
+
         paginator = self.pagination_class()
         paginator.page_size = request.query_params.get("limit", PAGE_SIZE)
         page = paginator.paginate_queryset(results, request)
@@ -116,7 +120,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         tags = self.request.query_params.getlist("tags")
         author = self.request.query_params.get("author")
         is_favorited = self.request.query_params.get("is_favorited")
-        is_in_shopping_cart = self.request.query_params.get("is_in_shopping_cart")
+        is_in_shopping_cart = self.request.query_params.get(
+            "is_in_shopping_cart")
 
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
@@ -208,3 +213,24 @@ class UserDetailView(APIView):
         user = get_object_or_404(CustomUser, id=user_id)
         serializer = CustomUserSerializer(user, context={"request": request})
         return Response(serializer.data)
+
+
+from users.serializers import AvatarSerializer
+
+class AvatarView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        serializer = AvatarSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        user = request.user
+        if user.avatar:
+            user.avatar.delete(save=False)
+            user.avatar = None
+            user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
