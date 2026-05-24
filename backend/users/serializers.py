@@ -7,6 +7,9 @@ from .models import CustomUser
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
+    first_name = serializers.CharField(required=True, max_length=150)
+    last_name = serializers.CharField(required=True, max_length=150)
+
     class Meta(UserCreateSerializer.Meta):
         model = CustomUser
         fields = (
