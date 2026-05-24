@@ -16,7 +16,6 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             "first_name",
             "last_name",
             "password",
-            "avatar",
         )
 
 
@@ -62,3 +61,10 @@ class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ("avatar",)
+
+
+class CustomUserPublicSerializer(serializers.ModelSerializer):
+    """Сериализатор для публичных данных пользователя (без аватара)"""
+    class Meta:
+        model = CustomUser
+        fields = ("id", "email", "username", "first_name", "last_name")
