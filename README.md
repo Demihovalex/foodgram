@@ -60,6 +60,14 @@ Foodgram — это онлайн-сервис, где пользователи �
 # 5. Создайте суперпользователя:
     sudo docker compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
 
+# Загрузка начальных данных (ингредиентов и тегов)
+    При первом запуске или после очистки базы данных необходимо загрузить ингредиенты и теги:
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata fixtures/tags.json
+    sudo docker compose -f docker-compose.production.yml exec backend python /app/fixtures/load_ingredients.py
+
+    Примечание: Теги и ингредиенты также можно добавить через админ-панель.
+
+
 # Деплой на сервер
     Проект развёрнут на сервере 158.160.184.58 с портом 9000.
     Для обновления проекта на сервере используется GitHub Actions. При пуше в ветку main автоматически:
