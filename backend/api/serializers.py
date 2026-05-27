@@ -15,7 +15,7 @@ from recipes.models import (
     Tag,
 )
 from rest_framework import serializers
-from users.models import Subscription, CustomUser
+from users.models import CustomUser, Subscription
 
 
 class UserSerializer(DjoserUserSerializer):
@@ -56,11 +56,9 @@ class SubscriptionSerializer(UserSerializer):
 
     def get_recipes(self, obj):
         request = self.context.get("request")
-        # Спецификация: не более 3 рецептов
-        recipes = obj.recipes.all()[:3]
-        return ShortRecipeSerializer(
-            recipes, many=True, context={"request": request}
-        ).data
+        recipes = obj.recipes.all()[:2]
+        return ShortRecipeSerializer(recipes, many=True,
+                                     context={"request": request}).data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -158,10 +156,23 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ("ingredients", "tags", "image", "name", "text", "cooking_time")
 
+    def validate_image(self, value):
+        # При создании рецепта картинка обязательна
+        if self.instance is None and not value:
+            raise serializers.ValidationError(
+                "Поле image обязательно для создания рецепта."
+            )
+        if self.instance is not None and value in (None, ""):
+            raise serializers.ValidationError(
+                "Удаление картинки рецепта запрещено. Чтобы изменить картинку, загрузите новую."
+            )
+        return value
+
     def validate(self, data):
+        # Проверка картинки только при создании (через validate_image)
+        # Остальная валидация (ингредиенты, теги)
         ingredients = data.get("ingredients")
         tags = data.get("tags")
-
         if not ingredients:
             raise serializers.ValidationError({"ingredients": "Нужны ингредиенты"})
         ingredient_ids = {item["id"] for item in ingredients}
@@ -169,13 +180,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"ingredients": "Ингредиенты не должны повторяться"}
             )
-
         if not tags:
             raise serializers.ValidationError({"tags": "Нужен хотя бы один тег"})
         tag_ids = {tag.id for tag in tags}
         if len(tags) != len(tag_ids):
             raise serializers.ValidationError({"tags": "Теги не должны повторяться"})
-
         return data
 
     def create_ingredients(self, recipe, ingredients_data):

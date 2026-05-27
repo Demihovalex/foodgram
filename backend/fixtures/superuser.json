@@ -1,0 +1,15 @@
+[
+  {
+    "model": "users.customuser",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$...",
+      "is_superuser": true,
+      "is_staff": true,
+      "email": "admin@example.com",
+      "username": "admin",
+      "first_name": "Admin",
+      "last_name": "User"
+    }
+  }
+]
