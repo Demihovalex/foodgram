@@ -41,6 +41,11 @@ class UserViewSet(DjoserUserViewSet):
     create_serializer_class = UserCreateSerializer
     pagination_class = LimitPageNumberPagination
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'create']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
     @action(['get'], detail=False, permission_classes=[IsAuthenticated])
     def me(self, request, *args, **kwargs):
         serializer = self.get_serializer(request.user)
