@@ -53,8 +53,6 @@ Foodgram — это онлайн-сервис, где пользователи �
 
 # 4. Выполните миграции, загрузите ингредиенты и соберите статику:
     sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-    sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata fixtures/ingredients.json
-    sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata fixtures/tags.json
     sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
 
 # 5. Создайте суперпользователя:
