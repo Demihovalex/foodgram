@@ -7,11 +7,9 @@ from constants import (
     TAG_NAME_MAX_LENGTH,
     TAG_SLUG_MAX_LENGTH,
 )
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-
-User = get_user_model()
 
 
 class Tag(models.Model):
@@ -56,7 +54,7 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="recipes",
         verbose_name="Автор",
@@ -133,7 +131,7 @@ class RecipeIngredient(models.Model):
 
 class Favorite(models.Model):
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="favorites",
         verbose_name="Пользователь",
@@ -160,7 +158,7 @@ class Favorite(models.Model):
 
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="shopping_cart",
         verbose_name="Пользователь",
@@ -183,36 +181,3 @@ class ShoppingCart(models.Model):
 
     def __str__(self):
         return f"{self.user} -> {self.recipe}"
-
-
-class Subscription(models.Model):
-    """Модель подписок."""
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="follower",
-        verbose_name="Подписчик",
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="following",
-        verbose_name="Автор",
-    )
-
-    class Meta:
-        verbose_name = "Подписка"
-        verbose_name_plural = "Подписки"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "author"], name="unique_subscription"
-            ),
-            models.CheckConstraint(
-                condition=~models.Q(user=models.F("author")),
-                name="user_not_self_subscription",
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.user} -> {self.author}"

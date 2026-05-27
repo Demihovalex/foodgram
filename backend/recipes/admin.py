@@ -1,4 +1,5 @@
 from django.contrib import admin
+from users.models import Subscription
 
 from .models import (
     Favorite,
@@ -6,7 +7,6 @@ from .models import (
     Recipe,
     RecipeIngredient,
     ShoppingCart,
-    Subscription,
     Tag,
 )
 
