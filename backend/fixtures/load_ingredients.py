@@ -3,6 +3,7 @@ import os
 import sys
 
 import django
+
 from recipes.models import Ingredient
 
 sys.path.append("/app")

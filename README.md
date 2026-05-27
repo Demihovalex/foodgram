@@ -45,18 +45,20 @@ Foodgram — это онлайн-сервис, где пользователи �
     DB_ENGINE=postgresql
     SECRET_KEY=ваш_секретный_ключ
     DEBUG=True
-    ALLOWED_HOSTS=localhost,127.0.0.1
+    ALLOWED_HOSTS=158.160.184.58,localhost,127.0.0.1
 
 # 3. Запустите контейнеры:
-    cd infra
-    docker compose -f docker-compose.production.yml up -d
+    cd ~/foodgram
+    sudo docker compose -f docker-compose.production.yml up -d
 
-# 4. Выполните миграции и соберите статику:
-    docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-    docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
+# 4. Выполните миграции, загрузите ингредиенты и соберите статику:
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata fixtures/ingredients.json
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata fixtures/tags.json
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
 
 # 5. Создайте суперпользователя:
-    docker compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
 
 # Деплой на сервер
     Проект развёрнут на сервере 158.160.184.58 с портом 9000.
@@ -66,16 +68,7 @@ Foodgram — это онлайн-сервис, где пользователи �
     Обновляются контейнеры на сервере
 
 # Основные эндпоинты
-    GET /api/recipes/ Список рецептов
-    POST /api/recipes/ Создание рецепта
-    GET /api/tags/ Список тегов
-    GET /api/ingredients/ Список ингредиентов
-    POST /api/auth/token/login/ Получение токена
-    POST /api/auth/users/ Регистрация пользователя
-    GET /api/users/me/ Информация о текущем пользователе
-    POST /api/recipes/{id}/favorite/ Добавить рецепт в избранное
-    POST /api/recipes/{id}/shopping_cart/ Добавить рецепт в список покупок
-    GET /api/recipes/download_shopping_cart/ Скачать список покупок
+    Полная спецификация доступна в коллекции Postman в папке postman_collection.
 
 # Админка
     Админ-панель доступна по адресу: http://158.160.184.58:9000/admin
