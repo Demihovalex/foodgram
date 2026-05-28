@@ -127,8 +127,8 @@ DJOSER = {
     "LOGIN_FIELD": "email",
     "HIDE_USERS": False,
     "SERIALIZERS": {
-        "user_create": "users.serializers.CustomUserCreateSerializer",
-        "user": "users.serializers.CustomUserPublicSerializer",
-        "current_user": "users.serializers.CustomUserSerializer",
+        "user_create": "api.serializers.CustomUserCreateSerializer",
+        "user": "api.serializers.CustomUserPublicSerializer",
+        "current_user": "api.serializers.UserSerializer",
     },
 }

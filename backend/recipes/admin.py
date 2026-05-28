@@ -43,6 +43,17 @@ class RecipeAdmin(admin.ModelAdmin):
         return obj.favorites.count()
     favorite_count.short_description = "Добавлений в избранное"
 
+    def save_model(self, request, obj, form, change):
+        if not obj.image:
+            raise ValueError("Рецепт должен содержать изображение")
+        super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        if not obj.ingredients.exists():
+            raise ValueError("Рецепт должен содержать хотя бы один ингредиент")
+
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):

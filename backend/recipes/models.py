@@ -1,3 +1,7 @@
+from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+
 from constants import (
     INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH,
     INGREDIENT_NAME_MAX_LENGTH,
@@ -7,9 +11,6 @@ from constants import (
     TAG_NAME_MAX_LENGTH,
     TAG_SLUG_MAX_LENGTH,
 )
-from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
 
 
 class Tag(models.Model):

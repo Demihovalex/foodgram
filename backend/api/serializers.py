@@ -1,20 +1,33 @@
+from djoser.serializers import UserSerializer as DjoserUserSerializer
+from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+
 from constants import (
     MAX_COOKING_TIME,
     MAX_INGREDIENT_AMOUNT,
     MIN_COOKING_TIME,
     MIN_INGREDIENT_AMOUNT,
 )
-from djoser.serializers import UserSerializer as DjoserUserSerializer
-from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers
 
-from recipes.models import (
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    Tag,
-)
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import CustomUser, Subscription
+
+
+class SubscribeSerializer(serializers.Serializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all()
+    )
+    author = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all()
+    )
+
+    def validate(self, data):
+        if data['user'] == data['author']:
+            raise serializers.ValidationError("Нельзя подписаться на себя")
+        if Subscription.objects.filter(user=data['user'],
+                                       author=data['author']).exists():
+            raise serializers.ValidationError("Вы уже подписаны")
+        return data
 
 
 class UserSerializer(DjoserUserSerializer):
@@ -56,12 +69,18 @@ class SubscriptionSerializer(UserSerializer):
 
     def get_recipes(self, obj):
         request = self.context.get("request")
-        recipes = obj.recipes.all()[:2]
-        return ShortRecipeSerializer(
-            recipes, many=True, context={"request": request}
-        ).data
+        recipes = obj.recipes.all()
+        limit = request.query_params.get("recipes_limit") if request else None
+        if limit and limit.isdigit():
+            recipes = recipes[:int(limit)]
+        else:
+            recipes = recipes[:3]
+        return ShortRecipeSerializer(recipes, many=True,
+                                     context={"request": request}).data
 
     def get_recipes_count(self, obj):
+        if hasattr(obj, 'recipes_count'):
+            return obj.recipes_count
         return obj.recipes.count()
 
 
@@ -228,3 +247,32 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ("id", "name", "measurement_unit")
+
+
+class CustomUserCreateSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(required=True, max_length=150)
+    last_name = serializers.CharField(required=True, max_length=150)
+
+    class Meta:
+        model = CustomUser
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        user = CustomUser(**validated_data)
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
+
+
+class CustomUserPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ("id", "email", "username", "first_name", "last_name")

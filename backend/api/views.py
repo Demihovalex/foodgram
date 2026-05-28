@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -22,6 +22,7 @@ from api.serializers import (
     RecipeCreateSerializer,
     RecipeSerializer,
     ShortRecipeSerializer,
+    SubscribeSerializer,
     SubscriptionSerializer,
     TagSerializer,
     UserSerializer,
@@ -54,7 +55,11 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(["get"], detail=False, permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
-        queryset = CustomUser.objects.filter(following__user=request.user)
+        queryset = CustomUser.objects.filter(
+            following__user=request.user
+        ).annotate(
+            recipes_count=Count('recipes')
+        ).prefetch_related('recipes')
         page = self.paginate_queryset(queryset)
         serializer = SubscriptionSerializer(page, many=True,
                                             context={"request": request})
@@ -65,19 +70,12 @@ class UserViewSet(DjoserUserViewSet):
     def subscribe(self, request, id=None):
         author = get_object_or_404(CustomUser, pk=id)
         if request.method == "POST":
-            if request.user == author:
-                return Response(
-                    {"errors": "Нельзя подписаться на себя"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            subscription, created = Subscription.objects.get_or_create(
-                user=request.user, author=author
-            )
-            if not created:
-                return Response(
-                    {"errors": "Вы уже подписаны"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            serializer = SubscribeSerializer(data={
+                'user': request.user.id,
+                'author': author.id
+            })
+            serializer.is_valid(raise_exception=True)
+            Subscription.objects.create(user=request.user, author=author)
             serializer = SubscriptionSerializer(author,
                                                 context={"request": request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -85,11 +83,8 @@ class UserViewSet(DjoserUserViewSet):
         deleted, _ = Subscription.objects.filter(user=request.user,
                                                  author=author).delete()
         if not deleted:
-            return Response(
-                {"errors": "Вы не были подписаны"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({"errors": "Вы не были подписаны"}, status=400)
+        return Response(status=204)
 
     @action(["put", "delete"], detail=False, url_path="me/avatar",
             permission_classes=[IsAuthenticated])
@@ -130,9 +125,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="get-link")
     def get_link(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        relative_url = reverse("recipes-detail", kwargs={"pk": recipe.id})
-        short_link = request.build_absolute_uri(relative_url)
+        recipe = self.get_object()
+        short_link = request.build_absolute_uri(f"/recipes/{recipe.id}/")
         return Response({"short-link": short_link})
 
     def _add_to_relation(self, model, recipe, serializer_class):
@@ -155,14 +149,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                                   ShortRecipeSerializer)
             if not created:
                 return Response({"errors": "Рецепт уже в избранном"},
-                                status=status.HTTP_400_BAD_REQUEST)
-            return Response(data, status=status.HTTP_201_CREATED)
-        else:
-            deleted = self._remove_from_relation(Favorite, recipe)
-            if not deleted:
-                return Response({"errors": "Рецепт не в избранном"},
-                                status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+                                status=400)
+            return Response(data, status=201)
+        deleted = self._remove_from_relation(Favorite, recipe)
+        if not deleted:
+            return Response({"errors": "Рецепт не в избранном"}, status=400)
+        return Response(status=204)
 
     @action(detail=True, methods=["post", "delete"], url_path="shopping_cart")
     def shopping_cart(self, request, pk=None):
@@ -174,12 +166,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 return Response({"errors": "Рецепт уже в списке покупок"},
                                 status=status.HTTP_400_BAD_REQUEST)
             return Response(data, status=status.HTTP_201_CREATED)
-        else:
-            deleted = self._remove_from_relation(ShoppingCart, recipe)
-            if not deleted:
-                return Response({"errors": "Рецепта нет в списке покупок"},
-                                status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        deleted = self._remove_from_relation(ShoppingCart, recipe)
+        if not deleted:
+            return Response({"errors": "Рецепта нет в списке покупок"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _get_shopping_cart_ingredients(self, user):
         return (
