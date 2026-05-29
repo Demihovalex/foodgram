@@ -3,7 +3,6 @@ from io import BytesIO
 from django.db.models import Count, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
-from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import UserCreateSerializer
 from djoser.views import UserViewSet as DjoserUserViewSet

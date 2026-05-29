@@ -2,14 +2,14 @@ import json
 import os
 import sys
 
+import django
+
+from recipes.models import Ingredient
+
 sys.path.append('/app')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'foodgram.settings')
 
-import django
-
 django.setup()
-
-from recipes.models import Ingredient
 
 file_path = '/app/fixtures/ingredients.json'
 
@@ -24,6 +24,7 @@ for item in data:
     )
     if created:
         count += 1
+
 print(
     f'Загружено {count} ингредиентов '
     f'(всего в БД: {Ingredient.objects.count()})'
