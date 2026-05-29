@@ -28,18 +28,21 @@ class RecipeIngredientInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        
+
         def clean_formset(formset):
             """Проверка, что есть хотя бы один ингредиент"""
             has_ingredients = False
             for form in formset.forms:
-                if form.cleaned_data and not form.cleaned_data.get(
-                    'DELETE', False):
+                if (
+                    form.cleaned_data
+                    and not form.cleaned_data.get('DELETE', False)
+                ):
                     has_ingredients = True
                     break
             if not has_ingredients:
                 raise ValidationError(
-                    'Рецепт должен содержать хотя бы один ингредиент')
+                    'Рецепт должен содержать хотя бы один ингредиент'
+                )
         formset.clean = clean_formset
         return formset
 
